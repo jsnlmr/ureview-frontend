@@ -77,9 +77,19 @@ function getMovies() {
 
   if(logged_in && !event) {
       getLoginForm().style.display = 'none'
-      fetch(searchURL + `the%20dark`)
-        .then(res => res.json()).then(data => {
-          data['Search'].forEach(movie => renderMovie(movie))
+      fetch(apiURL + `/users/${current_user_id}`)
+        .then(res => res.json()).then(revData => {
+
+          let movies = revData.reviews.map( rev => rev.movie_id)
+
+          if(movies.length === 0) {
+            movieContainer().innerText = 'YOU CURRENTLY HAVE NO MOVIE REVIEWS'
+          }
+          movies.forEach( id => {
+            fetch(showURL + id).then(res => res.json())
+              .then(mov => renderMovie(mov))
+          })
+          //data['Search'].forEach(movie => renderMovie(movie))
       })
     }
 
