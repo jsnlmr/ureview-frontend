@@ -75,7 +75,7 @@ function getMovies() {
 
   else { movieContainer().innerHTML = '' }
 
-  if(logged_in) {
+  if(logged_in && !event) {
       getLoginForm().style.display = 'none'
       fetch(searchURL + `the%20dark`)
         .then(res => res.json()).then(data => {
