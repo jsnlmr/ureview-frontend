@@ -83,7 +83,7 @@ function getMovies() {
           let movies = revData.reviews.map( rev => rev.movie_id)
 
           if(movies.length === 0) {
-            movieContainer().innerText = 'YOU CURRENTLY HAVE NO MOVIE REVIEWS'
+            movieContainer().innerText = 'You have not reviewed any movies yet. Search now to find a movie to review.'
           }
           movies.forEach( id => {
             fetch(showURL + id).then(res => res.json())
