@@ -118,7 +118,7 @@ function renderMovie(mov) {
   movieContainer().appendChild(movieCard)
 }
 
-/////////// SHOW PAGE ////////////////
+/////////// MOVIE SHOW PAGE ////////////////
 
 function fetchMovie() {
   movieContainer().innerHTML = ''
@@ -184,17 +184,47 @@ function postReview() {
   }).then(res => res.json()).then(revData => renderReview(revData))
 }
 
+function updateReview() {
+  event.preventDefault()
+
+  let data = { content: event.target.children[0].value }
+
+  getReviewForm().reset()
+
+  fetch(apiURL + `reviews/${event.target.dataset.reviewId}`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json'
+    },
+    body: JSON.stringify(data)
+  }).then(res => res.json()).then(revData => updateReviewContent(revData))
+}
+
 function makeReviewSection() {
   let revList = document.createElement('ul')
   revList.innerText = 'REVIEWS'
   revList.id = "review-container"
   movieContainer().appendChild(revList)
+  loadReviews()
 }
 
 function renderReview(rev) {
   let revEl = document.createElement('li')
   revEl.innerText = rev.content
+  revEl.dataset.revId = rev.id
   reviewContainer().appendChild(revEl)
+}
+
+function updateReviewContent(rev) {
+  getMyReview(rev.id).innerText = rev.content
+}
+
+function loadReviews() {
+  fetch(apiURL + 'reviews').then(res => res.json()).then(reviews => {
+    let movRevs = reviews.filter( rev => rev.movie_id === getMoviePageId())
+    movRevs.forEach(movRev => renderReview(movRev))
+  })
 }
 
 //////////////// FORMS ///////////////
@@ -207,17 +237,38 @@ function renderReviewForm() {
   revSubmit.type = 'submit'
   revForm.id = 'review-form'
 
-  revForm.addEventListener('submit', postReview)
+  fetch(apiURL + `users/${current_user_id}`)
+    .then(res => res.json()).then(user => {
+      let myRev = user.reviews.find(rev => rev.movie_id === getMoviePageId())
+
+      if(myRev) {
+        revInput.value = myRev.content
+        revForm.dataset.reviewId = myRev.id
+        revForm.addEventListener('submit', updateReview)
+      }
+
+      else {
+        revForm.addEventListener('submit', postReview)
+      }
+  })
+
+
   revForm.appendChild(revInput)
   revForm.appendChild(revSubmit)
   movieContainer().appendChild(revForm)
   makeReviewSection()
 }
 
+
+
 /////////// HELPER METHODS ///////////////
 
 function reviewContainer() {
   return document.querySelector('#review-container')
+}
+
+function getMyReview(id) {
+  return document.querySelector(`[data-rev-id='${id}']`)
 }
 
 function getReviewForm() {
@@ -238,4 +289,8 @@ function loginButton() {
 
 function getLoginForm() {
   return document.querySelector('#login-form')
+}
+
+function getMoviePageId() {
+  return movieContainer().firstElementChild.dataset.movieId
 }
