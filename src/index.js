@@ -6,13 +6,20 @@ let logged_in = false
 let current_user_id = null
 
 document.addEventListener('DOMContentLoaded', function(){
-  if(logged_in) {
-    getMovies()
-  }
-
-  else {
-        loginButton().addEventListener('click', renderLogin)
-  }
+  renderLogin()
+  //renderNav()
+  // loginLink().addEventListener('click', renderLogin)
+  // homeLink().addEventListener('click', function(){
+  // })
+  // reviewsLink().addEventListener('click', getMovies)
+  //
+  // if(logged_in) {
+  //   getMovies()
+  // }
+  //
+  // else {
+  //
+  // }
 })
 
 ///////// LOGIN //////////
@@ -25,12 +32,57 @@ function renderLogin() {
   submitEl.type = 'submit'
   loginForm.id = 'login-form'
 
-  loginForm.addEventListener('submit', verifyUser)
   loginForm.appendChild(usernameEl)
   loginForm.appendChild(submitEl)
 
-  document.body.appendChild(loginForm)
 
+  loginForm.addEventListener('submit', verifyUser)
+
+  let signup = document.createElement('a')
+  signup.innerText = 'Register as a New User'
+  signup.addEventListener('click', newUserForm)
+
+  document.body.append(loginForm, signup)
+}
+
+function newUserForm() {
+  document.body.innerHTML = ''
+
+  let userForm = document.createElement('form')
+  userForm.id = 'user-form'
+
+  let name = document.createElement('input')
+  let username = document.createElement('input')
+  let email = document.createElement('input')
+  let submit = document.createElement('input')
+  submit.type = 'submit'
+
+
+
+  userForm.addEventListener('submit', function() {
+    event.preventDefault()
+
+    let form = event.target
+
+    let data = { name: form.children[0].value, username: form.children[1].value, email: form.children[2].value }
+
+    fetch(apiURL + 'users', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json'
+      },
+      body: JSON.stringify(data)
+    }).then(res => res.json()).then(user => {
+      console.log(user)
+      logged_in = true
+      current_user_id = user.id
+      getMovies()
+    })
+  })
+
+  userForm.append(name, username, email, submit)
+  document.body.appendChild(userForm)
 }
 
 function verifyUser() {
@@ -39,10 +91,16 @@ function verifyUser() {
 
   fetch(apiURL + 'users').then(res => res.json()).then(data => {
     let found = data.find( user => { return user.username === name})
+
     if(found) {
       logged_in = true
       current_user_id = found.id
+      renderNav()
       getMovies()
+    }
+
+    else{
+      renderNav()
     }
   })
 
@@ -51,21 +109,28 @@ function verifyUser() {
 
 ///////// HOME PAGE /////////
 function getMovies() {
+  document.body.innerHTML = ""
+
+  renderNav()
+
   if(event) {
     event.preventDefault()
+    if(getProfileForm()) { getProfileForm().remove() }
   }
 
-  let movieForm = document.createElement('form')
-  let titleInput = document.createElement('input')
-  titleInput.name = 'search'
-  movieForm.innerText = 'Search: '
-  movieForm.id = 'movie-form'
-  movieForm.addEventListener('submit', getMovies)
-  let submit = document.createElement('input')
-  submit.type = 'submit'
+  if(getMovieForm() === null) {
+    let movieForm = document.createElement('form')
+    let titleInput = document.createElement('input')
+    titleInput.name = 'search'
+    movieForm.innerText = 'Search: '
+    movieForm.id = 'movie-form'
+    movieForm.addEventListener('submit', getMovies)
+    let submit = document.createElement('input')
+    submit.type = 'submit'
 
-  movieForm.append(titleInput, submit)
-  document.body.appendChild(movieForm)
+    movieForm.append(titleInput, submit)
+    document.body.appendChild(movieForm)
+  }
 
   if(movieContainer() === null) {
     let container = document.createElement('div')
@@ -75,8 +140,10 @@ function getMovies() {
 
   else { movieContainer().innerHTML = '' }
 
-  if(logged_in && !event) {
-      getLoginForm().style.display = 'none'
+  debugger
+
+  if(logged_in && (!event || event.type == 'click')) {
+    if(getLoginForm()) { getLoginForm().style.display = 'none' }
       fetch(apiURL + `/users/${current_user_id}`)
         .then(res => res.json()).then(revData => {
 
@@ -118,7 +185,7 @@ function renderMovie(mov) {
   movieContainer().appendChild(movieCard)
 }
 
-/////////// MOVIE SHOW PAGE ////////////////
+/////////// MOVIE REVIEWS PAGE ////////////////
 
 function fetchMovie() {
   movieContainer().innerHTML = ''
@@ -227,6 +294,9 @@ function loadReviews() {
   })
 }
 
+////////////// USER REVIEWS PAGE /////////////////////
+
+
 //////////////// FORMS ///////////////
 
 
@@ -283,8 +353,16 @@ function movieContainer() {
   return document.querySelector('#movie-container')
 }
 
-function loginButton() {
+function loginLink() {
   return document.querySelector('#login')
+}
+
+function homeLink() {
+  return document.querySelector('#home')
+}
+
+function reviewsLink() {
+  return document.querySelector('#my-reviews')
 }
 
 function getLoginForm() {
@@ -293,4 +371,89 @@ function getLoginForm() {
 
 function getMoviePageId() {
   return movieContainer().firstElementChild.dataset.movieId
+}
+
+function refresh() {
+  window.location.reload()
+}
+
+function renderNav() {
+  let nav = document.createElement('nav')
+
+  if(logged_in) {
+    let logout = document.createElement('a')
+    logout.id = 'logout'
+    logout.innerText = 'Logout'
+
+
+    let myReviews = document.createElement('a')
+    myReviews.id = 'my-reviews'
+    myReviews.innerText = 'My Reviews'
+
+    let profile = document.createElement('a')
+    profile.id = 'profile'
+    profile.innerText = 'My Profile'
+
+    logout.addEventListener('click', refresh)
+    myReviews.addEventListener('click', getMovies)
+    profile.addEventListener('click', loadProfile)
+    nav.append(logout, myReviews, profile)
+
+    document.body.appendChild(nav)
+  }
+}
+
+function loadProfile() {
+  document.body.innerHTML = ''
+  renderNav()
+  let current_user
+
+  let profile_form = document.createElement('form')
+  profile_form.id = 'profile-form'
+  let name = document.createElement('input')
+  let username = document.createElement('input')
+  let email = document.createElement('input')
+  let submit = document.createElement('input')
+  submit.type = 'submit'
+
+  fetch(apiURL + `users/${current_user_id}`)
+    .then(res => res.json()).then(user => {
+
+      current_user = user
+      name.value = current_user.name
+      username.value = current_user.username
+      email.value = current_user.email
+    })
+
+  profile_form.addEventListener('submit', updateProfile)
+  profile_form.append(name, username, email, submit)
+  document.body.append(profile_form)
+}
+
+function updateProfile() {
+  event.preventDefault()
+  let profile = event.currentTarget.children
+  let data = { name: profile[0].value, username: profile[1].value, email: profile[2].value }
+
+  fetch(apiURL + `users/${current_user_id}`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json'
+    },
+    body: JSON.stringify(data)
+  }).then(res => res.json()).then(user => updateProfileContent(user))
+}
+
+function  updateProfileContent(user) {
+  let formInputs = getProfileForm().children
+  formInputs[0].value = user.name
+  formInputs[1].value = user.username
+  formInputs[2].value = user.email
+
+  alert('Profile successfully updated!')
+}
+
+function getProfileForm() {
+  return document.querySelector('#profile-form')
 }
