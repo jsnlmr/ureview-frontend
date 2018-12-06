@@ -42,7 +42,7 @@ function renderLogin() {
 
   let usernameInput = document.createElement('input')
   usernameInput.placeholder = "Username"
-  usernameInput.id = 'username-input'
+  usernameInput.id = 'login-username'
 
   let loginButton = document.createElement('div')
   loginButton.className = "ui fluid blue large submit button"
@@ -57,7 +57,7 @@ function renderLogin() {
   let registerLink = document.createElement('a')
   registerLink.id = "register"
   registerLink.innerText = "Register Now"
-  registerLink.addEventListener('click', newUserForm)
+  registerLink.addEventListener('click', newregisterForm)
 
   document.body.appendChild(loginContainer)
   loginContainer.appendChild(loginBox)
@@ -69,26 +69,55 @@ function renderLogin() {
   registrationDiv.appendChild(registerLink)
 }
 
-function newUserForm() {
+function newregisterForm() {
   document.body.innerHTML = ''
 
-  let userForm = document.createElement('form')
-  userForm.id = 'user-form'
+  let registerContainer = document.createElement('div')
+  registerContainer.className = "ui middle aligned center aligned grid"
 
-  let name = document.createElement('input')
-  let username = document.createElement('input')
-  let email = document.createElement('input')
-  let submit = document.createElement('input')
-  submit.type = 'submit'
+  let registerBox = document.createElement('div')
+  registerBox.className = "column login-box"
 
+  let registerHeader = document.createElement('h2')
+  registerHeader.className = "ui blue header"
+  registerHeader.innerText = "Register as a new user"
 
+  let registerForm = document.createElement('form')
+  registerForm.id = 'register-form'
+  registerForm.className = "ui large form"
 
-  userForm.addEventListener('submit', function() {
+  let registerDiv = document.createElement('div')
+  registerDiv.className = "ui stacked segment"
+
+  let registerName = document.createElement('div')
+  registerName.className = "field"
+
+  let nameInput = document.createElement('input')
+  nameInput.id = 'register-name'
+  nameInput.placeholder = 'Full Name'
+
+  let registerUsername = document.createElement('div')
+  registerUsername.className = "field"
+
+  let usernameInput = document.createElement('input')
+  usernameInput.id = 'register-username'
+  usernameInput.placeholder = 'Username'
+
+  let registerEmail = document.createElement('div')
+  registerEmail.className = "field"
+
+  let emailInput = document.createElement('input')
+  emailInput.id = 'register-email'
+  emailInput.placeholder = 'Email'
+
+  let registerButton = document.createElement('div')
+  registerButton.className = "ui fluid blue large submit button"
+  registerButton.id = "register"
+  registerButton.innerText = "Register"
+  registerButton.addEventListener('click', function() {
     event.preventDefault()
 
-    let form = event.target
-
-    let data = { name: form.children[0].value, username: form.children[1].value, email: form.children[2].value }
+    let data = { name: getRegisterName().value, username: getRegisterUsername().value, email: getRegisterEmail().value }
 
     fetch(apiURL + 'users', {
       method: 'POST',
@@ -105,14 +134,20 @@ function newUserForm() {
     })
   })
 
-  userForm.append(name, username, email, submit)
-  document.body.appendChild(userForm)
+  document.body.appendChild(registerContainer)
+  registerContainer.appendChild(registerBox)
+  registerBox.append(registerHeader, registerForm)
+  registerForm.appendChild(registerDiv)
+  registerDiv.append(registerName, registerUsername, registerEmail, registerButton)
+  registerName.appendChild(nameInput)
+  registerUsername.appendChild(usernameInput)
+  registerEmail.appendChild(emailInput)
 }
 
 function verifyUser() {
   event.preventDefault()
 
-  let name = getUsernameInput().value //event.target.children[0].value
+  let name = getLoginUsername().value //event.target.children[0].value
 
   fetch(apiURL + 'users').then(res => res.json()).then(data => {
     let found = data.find( user => { return user.username === name})
@@ -135,25 +170,24 @@ function getMovies() {
   document.body.innerHTML = ""
 
   renderNav()
-
   if(event) {
     event.preventDefault()
     if(getProfileForm()) { getProfileForm().remove() }
   }
 
-  if(getMovieForm() === null) {
-    let movieForm = document.createElement('form')
-    let titleInput = document.createElement('input')
-    titleInput.name = 'search'
-    movieForm.innerText = 'Search: '
-    movieForm.id = 'movie-form'
-    movieForm.addEventListener('submit', getMovies)
-    let submit = document.createElement('input')
-    submit.type = 'submit'
-
-    movieForm.append(titleInput, submit)
-    document.body.appendChild(movieForm)
-  }
+  // if(getMovieForm() === null) {
+  //   let movieForm = document.createElement('form')
+  //   let titleInput = document.createElement('input')
+  //   titleInput.name = 'search'
+  //   movieForm.innerText = 'Search: '
+  //   movieForm.id = 'movie-form'
+  //   movieForm.addEventListener('submit', getMovies)
+  //   let submit = document.createElement('input')
+  //   submit.type = 'submit'
+  //
+  //   movieForm.append(titleInput, submit)
+  //   document.body.appendChild(movieForm)
+  // }
 
   if(movieContainer() === null) {
     let container = document.createElement('div')
@@ -182,12 +216,12 @@ function getMovies() {
     }
 
     else {
-      fetch(searchURL + event.target.children[0].value)
+      fetch(searchURL + event.target.value)
         .then(res => res.json()).then(data => {
           data['Search'].forEach(movie => renderMovie(movie))
       })
 
-      getMovieForm().reset()
+      //getMovieForm().reset()
     }
 }
 
@@ -395,30 +429,82 @@ function refresh() {
 }
 
 function renderNav() {
-  let nav = document.createElement('nav')
 
-  if(logged_in) {
-    let logout = document.createElement('a')
-    logout.id = 'logout'
-    logout.innerText = 'Logout'
+  if (logged_in) {
+    let nav = document.createElement('nav')
+    nav.className = "ui horizontal menu"
 
+    let myReviewsLink = document.createElement('a')
+    myReviewsLink.className = "link item"
+    myReviewsLink.id = "my-reviews"
+    myReviewsLink.innerText = "My Reviews"
+    myReviewsLink.addEventListener('click', getMovies)
 
-    let myReviews = document.createElement('a')
-    myReviews.id = 'my-reviews'
-    myReviews.innerText = 'My Reviews'
+    let myProfileLink = document.createElement('a')
+    myProfileLink.className = "link item"
+    myProfileLink.id = "my-profile"
+    myProfileLink.innerText = "My Profile"
+    myProfileLink.addEventListener('click', loadProfile)
 
-    let profile = document.createElement('a')
-    profile.id = 'profile'
-    profile.innerText = 'My Profile'
+    let rightNav = document.createElement('div')
+    rightNav.className = "right menu"
 
-    logout.addEventListener('click', refresh)
-    myReviews.addEventListener('click', getMovies)
-    profile.addEventListener('click', loadProfile)
-    nav.append(logout, myReviews, profile)
+    let searchBarDiv = document.createElement('div')
+    searchBarDiv.className = "item"
+
+    let searchBar = document.createElement('div')
+    searchBar.className = "ui icon input"
+
+    let searchInput = document.createElement('input')
+    searchInput.name = "search"
+    searchInput.placeholder = "Search for a movie..."
+    searchInput.addEventListener('keypress', function() {
+      if(event.key === "Enter") {
+        getMovies()
+      }
+    })
+
+    let searchIcon = document.createElement('i')
+    searchIcon.className = "search link icon"
+    searchIcon.addEventListener('click', getMovies)
+
+    let logoutLink = document.createElement('a')
+    logoutLink.className = "ui item"
+    logoutLink.id = "logout"
+    logoutLink.innerText = "Logout"
+    logoutLink.addEventListener('click', refresh)
 
     document.body.appendChild(nav)
+    nav.append(myReviewsLink, myProfileLink, rightNav)
+    rightNav.append(searchBarDiv, logoutLink)
+    searchBarDiv.appendChild(searchBar)
+    searchBar.append(searchInput, searchIcon)
   }
+
+  ////////// PREVIOUS ////////
+  // let nav = document.createElement('nav')
+  //
+  //
+  // if(logged_in) {
+  //   let logout = document.createElement('a')
+  //   logout.id = 'logout'
+  //   logout.innerText = 'Logout'
+  //
+  //
+  //   let myReviews = document.createElement('a')
+  //   myReviews.id = 'my-reviews'
+  //   myReviews.innerText = 'My Reviews'
+  //
+  //   let profile = document.createElement('a')
+  //   profile.id = 'profile'
+  //   profile.innerText = 'My Profile'
+  //
+
+  //
+  //   document.body.appendChild(nav)
+  // }
 }
+
 
 function loadProfile() {
   document.body.innerHTML = ''
@@ -475,6 +561,18 @@ function getProfileForm() {
   return document.querySelector('#profile-form')
 }
 
-function getUsernameInput() {
-  return document.querySelector('#username-input')
+function getLoginUsername() {
+  return document.querySelector('#login-username')
+}
+
+function getRegisterName() {
+  return document.querySelector('#register-name')
+}
+
+function getRegisterUsername() {
+  return document.querySelector('#register-username')
+}
+
+function getRegisterEmail() {
+  return document.querySelector('#register-email')
 }
