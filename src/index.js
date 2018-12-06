@@ -7,42 +7,66 @@ let current_user_id = null
 
 document.addEventListener('DOMContentLoaded', function(){
   renderLogin()
-  //renderNav()
-  // loginLink().addEventListener('click', renderLogin)
-  // homeLink().addEventListener('click', function(){
-  // })
-  // reviewsLink().addEventListener('click', getMovies)
-  //
-  // if(logged_in) {
-  //   getMovies()
-  // }
-  //
-  // else {
-  //
-  // }
 })
 
 ///////// LOGIN //////////
 function renderLogin() {
   document.body.innerHTML = ''
 
+  let loginContainer = document.createElement('div')
+  loginContainer.className = "ui middle aligned center aligned grid"
+
+  let loginBox = document.createElement('div')
+  loginBox.className = "column login-box"
+
+  let loginHeader = document.createElement('h2')
+  loginHeader.className = "ui blue header"
+  loginHeader.innerText = "Login to your account"
+
   let loginForm = document.createElement('form')
-  let usernameEl = document.createElement('input')
-  let submitEl = document.createElement('input')
-  submitEl.type = 'submit'
   loginForm.id = 'login-form'
-
-  loginForm.appendChild(usernameEl)
-  loginForm.appendChild(submitEl)
-
-
+  loginForm.className = "ui large form"
   loginForm.addEventListener('submit', verifyUser)
 
-  let signup = document.createElement('a')
-  signup.innerText = 'Register as a New User'
-  signup.addEventListener('click', newUserForm)
+  let loginDiv = document.createElement('div')
+  loginDiv.className = "ui stacked segment"
 
-  document.body.append(loginForm, signup)
+  let loginField = document.createElement('div')
+  loginField.className = "field"
+
+  let userIconDiv = document.createElement('div')
+  userIconDiv.className = "ui left icon input"
+
+  let userIcon = document.createElement('i')
+  userIcon.className = "user icon"
+
+  let usernameInput = document.createElement('input')
+  usernameInput.placeholder = "Username"
+  usernameInput.id = 'username-input'
+
+  let loginButton = document.createElement('div')
+  loginButton.className = "ui fluid blue large submit button"
+  loginButton.id = "login"
+  loginButton.innerText = "Login"
+  loginButton.addEventListener('click', verifyUser)
+
+  let registrationDiv = document.createElement('div')
+  registrationDiv.className = "ui message"
+  registrationDiv.innerText = "New user? "
+
+  let registerLink = document.createElement('a')
+  registerLink.id = "register"
+  registerLink.innerText = "Register Now"
+  registerLink.addEventListener('click', newUserForm)
+
+  document.body.appendChild(loginContainer)
+  loginContainer.appendChild(loginBox)
+  loginBox.append(loginHeader, loginForm)
+  loginForm.appendChild(loginDiv)
+  loginDiv.append(loginField, loginButton, registrationDiv)
+  loginField.appendChild(userIconDiv)
+  userIconDiv.append(userIcon, usernameInput)
+  registrationDiv.appendChild(registerLink)
 }
 
 function newUserForm() {
@@ -87,7 +111,8 @@ function newUserForm() {
 
 function verifyUser() {
   event.preventDefault()
-  let name = event.target.children[0].value
+
+  let name = getUsernameInput().value //event.target.children[0].value
 
   fetch(apiURL + 'users').then(res => res.json()).then(data => {
     let found = data.find( user => { return user.username === name})
@@ -103,8 +128,6 @@ function verifyUser() {
       renderNav()
     }
   })
-
-
 }
 
 ///////// HOME PAGE /////////
@@ -139,8 +162,6 @@ function getMovies() {
   }
 
   else { movieContainer().innerHTML = '' }
-
-  debugger
 
   if(logged_in && (!event || event.type == 'click')) {
     if(getLoginForm()) { getLoginForm().style.display = 'none' }
@@ -294,9 +315,6 @@ function loadReviews() {
   })
 }
 
-////////////// USER REVIEWS PAGE /////////////////////
-
-
 //////////////// FORMS ///////////////
 
 
@@ -321,7 +339,6 @@ function renderReviewForm() {
         revForm.addEventListener('submit', postReview)
       }
   })
-
 
   revForm.appendChild(revInput)
   revForm.appendChild(revSubmit)
@@ -456,4 +473,8 @@ function  updateProfileContent(user) {
 
 function getProfileForm() {
   return document.querySelector('#profile-form')
+}
+
+function getUsernameInput() {
+  return document.querySelector('#username-input')
 }
