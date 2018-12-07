@@ -4,7 +4,7 @@ const apiURL = 'http://localhost:3000/api/v1/'
 
 let logged_in = false
 let current_user = null
-//let current_user_id = null
+let current_movie = null
 
 document.addEventListener('DOMContentLoaded', function(){
   renderLogin()
@@ -131,7 +131,6 @@ function newregisterForm() {
       console.log(user)
       logged_in = true
       current_user = user
-      //current_user_id = user.id
       getMovies()
     })
   })
@@ -149,7 +148,7 @@ function newregisterForm() {
 function verifyUser() {
   event.preventDefault()
 
-  let name = getLoginUsername().value //event.target.children[0].value
+  let name = getLoginUsername().value
 
   fetch(apiURL + 'users').then(res => res.json()).then(data => {
     let found = data.find( user => { return user.username === name})
@@ -157,7 +156,6 @@ function verifyUser() {
     if(found) {
       logged_in = true
       current_user = found
-      //current_user_id = found.id
       renderNav()
       getMovies()
     }
@@ -175,22 +173,7 @@ function getMovies() {
   renderNav()
   if(event) {
     event.preventDefault()
-    //if(getUpdateForm()) { getUpdateForm().remove() }
   }
-
-  // if(getMovieForm() === null) {
-  //   let movieForm = document.createElement('form')
-  //   let titleInput = document.createElement('input')
-  //   titleInput.name = 'search'
-  //   movieForm.innerText = 'Search: '
-  //   movieForm.id = 'movie-form'
-  //   movieForm.addEventListener('submit', getMovies)
-  //   let submit = document.createElement('input')
-  //   submit.type = 'submit'
-  //
-  //   movieForm.append(titleInput, submit)
-  //   document.body.appendChild(movieForm)
-  // }
 
   if(movieContainer() === null) {
     let container = document.createElement('div')
@@ -203,23 +186,21 @@ function getMovies() {
 
   if(logged_in && (!event || (event.type === 'click' && event.target.id != 'search-icon'))) {
     if(getLoginForm()) { getLoginForm().style.display = 'none' }
-      fetch(apiURL + `/users/${current_user.id}`/*`/users/${current_user_id}`*/)
-        .then(res => res.json()).then(revData => {
+    let userReviews = current_user.reviews
 
-          let movies = revData.reviews.map( rev => rev.movie_id)
+    if(userReviews.length != 0) {
+      let movies = userReviews.map( rev => rev.movie_id)
 
-          if(movies.length === 0) {
-            movieContainer().innerText = 'You have not reviewed any movies yet. Search now to find a movie to review.'
-          }
-          else {
-            movies.forEach( id => {
-              fetch(showURL + id).then(res => res.json())
-                .then(mov => renderMovie(mov))
-            })
-          }
-          //data['Search'].forEach(movie => renderMovie(movie))
+      movies.forEach( id => {
+        fetch(showURL + id).then(res => res.json())
+          .then(mov => renderMovie(mov))
       })
     }
+
+    else {
+      movieContainer().innerText = 'You have not reviewed any movies yet. Search now to find a movie to review.'
+    }
+  }
 
     else {
       let searchTerm = event.target.value ? event.target.value : event.target.previousSibling.value
@@ -233,8 +214,6 @@ function getMovies() {
             movieContainer().innerText = 'No movies were found in your search.'
           }
       })
-
-      //getMovieForm().reset()
     }
 }
 
@@ -270,10 +249,15 @@ function renderMovie(mov) {
 function fetchMovie() {
   movieContainer().innerHTML = ''
   fetch(showURL + event.currentTarget.dataset.movieId)
-    .then(res => res.json()).then(data => showMovie(data))
+    .then(res => res.json()).then(mov => {
+      current_movie = mov
+      showMovie(mov)
+    })
 }
 
 function showMovie(mov) {
+  document.body.innerHTML = ""
+  renderNav()
   // create movie card //
   let movieCard = document.createElement('div')
   movieCard.dataset.movieId = mov["imdbID"]
@@ -312,7 +296,7 @@ function showMovie(mov) {
   actors.innerText = mov["Actors"]
 
   movieCard.append(poster, titleYear, lengthGenreDate, plot, director, writer, actors)
-  movieContainer().appendChild(movieCard)
+  document.body.appendChild(movieCard)
   renderReviewForm()
 }
 
@@ -353,7 +337,7 @@ function makeReviewSection() {
   let revList = document.createElement('ul')
   revList.innerText = 'REVIEWS'
   revList.id = "review-container"
-  movieContainer().appendChild(revList)
+  document.body.appendChild(revList)
   loadReviews()
 }
 
@@ -369,10 +353,14 @@ function updateReviewContent(rev) {
 }
 
 function loadReviews() {
-  fetch(apiURL + 'reviews').then(res => res.json()).then(reviews => {
-    let movRevs = reviews.filter( rev => rev.movie_id === getMoviePageId())
-    movRevs.forEach(movRev => renderReview(movRev))
-  })
+  fetch(apiURL + 'reviews')
+    .then(res => res.json()).then(reviews => {
+      let movRevs = reviews.filter( rev => {
+        return rev.movie_id === current_movie.imdbID
+      })
+
+      movRevs.forEach(movRev => renderReview(movRev))
+    })
 }
 
 //////////////// FORMS ///////////////
@@ -385,24 +373,37 @@ function renderReviewForm() {
   revSubmit.type = 'submit'
   revForm.id = 'review-form'
 
-  fetch(apiURL + `users/${current_user.id}`/*`users/${current_user_id}`*/)
-    .then(res => res.json()).then(user => {
-      let myRev = user.reviews.find(rev => rev.movie_id === getMoviePageId())
-
-      if(myRev) {
-        revInput.value = myRev.content
-        revForm.dataset.reviewId = myRev.id
-        revForm.addEventListener('submit', updateReview)
-      }
-
-      else {
-        revForm.addEventListener('submit', postReview)
-      }
+  let userRev = current_user.reviews.find(rev => {
+    return rev.movie_id === current_movie.imdbID
   })
+
+  if(userRev) {
+    revInput.value = userRev.content
+    revForm.dataset.reviewId = userRev.id
+    revForm.addEventListener('submit', updateReview)
+  }
+
+  else {
+    revForm.addEventListener('submit', postReview)
+  }
+  // fetch(apiURL + `users/${current_user.id}`)
+  //   .then(res => res.json()).then(user => {
+  //     let myRev = user.reviews.find(rev => rev.movie_id === getMoviePageId())
+  //
+  //     if(myRev) {
+  //       revInput.value = myRev.content
+  //       revForm.dataset.reviewId = myRev.id
+  //       revForm.addEventListener('submit', updateReview)
+  //     }
+  //
+  //     else {
+  //       revForm.addEventListener('submit', postReview)
+  //     }
+  // })
 
   revForm.appendChild(revInput)
   revForm.appendChild(revSubmit)
-  movieContainer().appendChild(revForm)
+  document.body.appendChild(revForm)
   makeReviewSection()
 }
 
@@ -581,7 +582,7 @@ function updateProfile() {
   let profile = event.currentTarget.children
   let data = { name: getUpdateName().value, username: getUpdateUsername().value, email: getUpdateEmail().value }
 
-  fetch(apiURL + `users/${current_user.id}`/*`users/${current_user_id}`*/, {
+  fetch(apiURL + `users/${current_user.id}`, {
     method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',
@@ -593,15 +594,6 @@ function updateProfile() {
     loadProfile()
   })
 }
-
-// function  updateProfileContent(user) {
-//   let formInputs = getProfileForm().children
-//   formInputs[0].value = user.name
-//   formInputs[1].value = user.username
-//   formInputs[2].value = user.email
-//
-//   alert('Profile successfully updated!')
-// }
 
 function getUpdateForm() {
   return document.querySelector('#update-form')
