@@ -2,3 +2,22 @@
   max-width: 600px;
   vertical-align: middle;
 }
+
+textarea.field {
+  max-width: 900px;
+}
+
+ #review-form {
+  margin-top: 50px;
+  margin-right: 300px;
+  margin-bottom: 50px;
+}
+
+body {
+  padding: 5px;
+}
+
+.info-divider {
+  margin-left: 10px;
+  margin-right: 10px;
+}

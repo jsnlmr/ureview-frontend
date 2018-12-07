@@ -256,48 +256,102 @@ function fetchMovie() {
 }
 
 function showMovie(mov) {
-  document.body.innerHTML = ""
+  document.body.innerHTML = ''
   renderNav()
-  // create movie card //
+
   let movieCard = document.createElement('div')
   movieCard.dataset.movieId = mov["imdbID"]
+  movieCard.className = "ui celled grid"
 
-  /// add poster //
+  let rowDiv = document.createElement('div')
+  rowDiv.className = "row"
+
+  let column4wide = document.createElement('div')
+  column4wide.className = "four wide column"
+
   let poster = document.createElement('img')
   poster.src = mov["Poster"]
   poster.setAttribute('onerror', "this.onerror=null;this.src='https://rawapk.com/wp-content/uploads/2018/09/Movie-HD-Icon.png';")
 
-  // add title & year ////
-  let titleYear = document.createElement('p')
+  let column12wide = document.createElement('div')
+  column12wide.className = "twelve wide column"
+
+  let movieInfoDiv = document.createElement('div')
+
+  let titleYear = document.createElement('h1')
   titleYear.innerText = `${mov['Title']} (${mov['Year']})`
 
-  ////////// Runtime + Genre + Release Date ////////
   let lengthGenreDate = document.createElement('div')
-  let runtime = document.createElement('span')
-  let genre = document.createElement('span')
-  let release_date = document.createElement('span')
-  runtime.innerText = mov["Runtime"]
-  genre.innerText = mov["Genre"]
-  release_date.innerText = mov["Released"]
-  lengthGenreDate.append(runtime, genre, release_date)
 
-  /////////// plot //////////
+  let runtime = document.createElement('span')
+  runtime.id = 'runtime'
+  runtime.innerText = mov["Runtime"]
+
+  let genre = document.createElement('span')
+  genre.id = 'genre'
+  //debugger
+  genre.innerText = mov["Genre"]
+
+  let release_date = document.createElement('span')
+  release_date.id = 'release-date'
+  release_date.innerText = mov["Released"]
+
   let plot = document.createElement('p')
   plot.innerText = mov["Plot"]
 
-  ////////// production + director + writer + cast /////////
-  let production = document.createElement('p')
-  let director = document.createElement('p')
-  let writer = document.createElement('p')
-  let actors = document.createElement('p')
+  let plotHeader = document.createElement('h4')
+  plotHeader.innerText = "Plot Summary"
+  
+  let production = document.createElement('h4')
   production.innerText = mov["Production"]
-  director.innerText = mov["Director"]
-  writer.innerText = mov["Writer"]
-  actors.innerText = mov["Actors"]
 
-  movieCard.append(poster, titleYear, lengthGenreDate, plot, director, writer, actors)
+  let director = document.createElement('p')
+  director.innerText = mov["Director"]
+  let directorHeader = document.createElement('h4')
+  directorHeader.innerText = "Director(s):"
+
+
+
+
+  let writer = document.createElement('p')
+  writer.innerText = mov["Writer"]
+  let writerHeader = document.createElement('h4')
+  writerHeader.innerText = "Writers(s):"
+
+  let actors = document.createElement('p')
+  actors.innerText = mov["Actors"]
+  let actorsHeader = document.createElement('h4')
+  actorsHeader.innerText = "Featured Cast:"
+
   document.body.appendChild(movieCard)
+  movieCard.appendChild(rowDiv)
+  rowDiv.append(column4wide, column12wide)
+  column4wide.appendChild(poster)
+  lengthGenreDate.append(runtime, ' | ', genre, ' | ', release_date)
+  column12wide.append(titleYear, production, lengthGenreDate, plotHeader, plot, directorHeader, director, writerHeader, writer, actorsHeader, actors)
   renderReviewForm()
+
+  // document.body.innerHTML = ""
+  // renderNav()
+  // // create movie card //
+  // let movieCard = document.createElement('div')
+  // movieCard.dataset.movieId = mov["imdbID"]
+  //
+  // /// add poster //
+  // let poster = document.createElement('img')
+  // poster.src = mov["Poster"]
+  // poster.setAttribute('onerror', "this.onerror=null;this.src='https://rawapk.com/wp-content/uploads/2018/09/Movie-HD-Icon.png';")
+  //
+  // // add title & year ////
+  // let titleYear = document.createElement('p')
+  // titleYear.innerText = `${mov['Title']} (${mov['Year']})`
+  //
+  ////////// Runtime + Genre + Release Date ////////
+
+  //
+  // movieCard.append(poster, titleYear, lengthGenreDate, plot, director, writer, actors)
+  // document.body.appendChild(movieCard)
+  // renderReviewForm()
 }
 
 function postReview() {
@@ -319,47 +373,117 @@ function postReview() {
 function updateReview() {
   event.preventDefault()
 
-  let data = { content: event.target.children[0].value }
+  let data = { content: getReviewContent().value }
 
   getReviewForm().reset()
 
-  fetch(apiURL + `reviews/${event.target.dataset.reviewId}`, {
+  fetch(apiURL + `reviews/${getReviewContent().dataset.reviewId}`, {
     method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',
       Accept: 'application/json'
     },
     body: JSON.stringify(data)
-  }).then(res => res.json()).then(revData => updateReviewContent(revData))
+  }).then(res => res.json()).then(revData => {
+    getMyReview(revData.id).remove()
+    getReviewContent().value = revData.content
+    alert('Review updated!')
+    renderReview(revData)
+  })
 }
 
 function makeReviewSection() {
-  let revList = document.createElement('ul')
-  revList.innerText = 'REVIEWS'
-  revList.id = "review-container"
+  let revList = document.createElement('div')
+  revList.id = 'review-container'
+  revList.className = 'ui large comments'
+
+  let revHeader = document.createElement('h3')
+  revHeader.className = 'ui dividing header'
+  revHeader.innerText = 'Latest Reviews'
+  revHeader.id = 'latest'
+  revList.appendChild(revHeader)
   document.body.appendChild(revList)
+  // revList.innerText = 'REVIEWS'
+  // revList.id = "review-container"
+  // document.body.appendChild(revList)
   loadReviews()
 }
 
 function renderReview(rev) {
-  let revEl = document.createElement('li')
-  revEl.innerText = rev.content
-  revEl.dataset.revId = rev.id
-  reviewContainer().appendChild(revEl)
+  let revDiv = document.createElement('div')
+  revDiv.className = "comment"
+  revDiv.dataset.revId = rev.id
+
+  let contentDiv = document.createElement('div')
+  contentDiv.className = 'content'
+
+  let randomDiv = document.createElement('div')
+
+  let dataSpan = document.createElement('span')
+  dataSpan.innerText = 'Reviewed by '
+
+  let authorSpan = document.createElement('span')
+  authorSpan.className = 'author'
+  authorSpan.innerText = rev.user.username
+
+  let dateSpan = document.createElement('span')
+  dateSpan.className = 'aligned right metadata date'
+
+  let textDiv = document.createElement('div')
+  textDiv.className = 'text'
+  textDiv.innerText = rev.content
+
+  let date
+  createdDate = Date.parse(rev.created_at)
+  updatedDate = Date.parse(rev.updated_at)
+
+  if(createdDate < updatedDate) {
+    date = new Date(updatedDate).toLocaleString()
+    dateSpan.innerText = `Updated at ${date}`
+  }
+
+  else {
+    date = new Date(createdDate).toLocaleString()
+    dateSpan.innerText = `Posted at ${date}`
+  }
+
+
+  //debugger
+  reviewContainer().insertBefore(revDiv, document.querySelector('#latest').nextSibling)
+  //document.querySelector('h3').nextSibling.insert
+
+  //else { reviewContainer().appendChild(revDiv) }
+  //reviewContainer().appendChild(revDiv)
+  revDiv.appendChild(contentDiv)
+  contentDiv.append(randomDiv, textDiv)
+  randomDiv.appendChild(dataSpan)
+  dataSpan.append(authorSpan, dateSpan)
+  //BOOKMARK
+  //////// PREVIOUS ///////
+  // let revEl = document.createElement('li')
+  // revEl.innerText = rev.content
+  // revEl.dataset.revId = rev.id
+  // reviewContainer().appendChild(revEl)
+
 }
 
 function updateReviewContent(rev) {
-  getMyReview(rev.id).innerText = rev.content
+
+  renderReview()
 }
 
 function loadReviews() {
   fetch(apiURL + 'reviews')
     .then(res => res.json()).then(reviews => {
+
       let movRevs = reviews.filter( rev => {
         return rev.movie_id === current_movie.imdbID
       })
 
-      movRevs.forEach(movRev => renderReview(movRev))
+      //debugger
+      movRevs.sort( (a,b) => {
+        return Date.parse(a.updated_at) - Date.parse(b.updated_at)
+      }).forEach(movRev => renderReview(movRev))
     })
 }
 
@@ -368,10 +492,25 @@ function loadReviews() {
 
 function renderReviewForm() {
   let revForm = document.createElement('form')
+  revForm.className = 'ui reply form'
+
+  let fieldDiv = document.createElement('div')
+  fieldDiv.className = 'field'
+
   let revInput = document.createElement('textarea')
-  let revSubmit = document.createElement('input')
-  revSubmit.type = 'submit'
+  revInput.id = 'review-content'
+
+  let revSubmit = document.createElement('div')
+  revSubmit.className = "ui blue labeled submit icon button"
+
+  let editIcon = document.createElement('i')
+  editIcon.className='icon edit'
+
   revForm.id = 'review-form'
+
+  let formHeader = document.createElement('h3')
+  formHeader.className = 'ui dividing header'
+
 
   let userRev = current_user.reviews.find(rev => {
     return rev.movie_id === current_movie.imdbID
@@ -379,13 +518,24 @@ function renderReviewForm() {
 
   if(userRev) {
     revInput.value = userRev.content
-    revForm.dataset.reviewId = userRev.id
-    revForm.addEventListener('submit', updateReview)
+    revInput.dataset.reviewId = userRev.id
+    revSubmit.innerText = 'Edit Review'
+    formHeader.innerText = 'Edit Your Previous Review'
+    revSubmit.addEventListener('click', updateReview)
   }
 
   else {
-    revForm.addEventListener('submit', postReview)
+    revSubmit.innerText = 'Post Review'
+    formHeader.innerText = 'Add a New Review'
+    revSubmit.addEventListener('click', postReview)
   }
+
+  document.body.appendChild(revForm)
+  revForm.append(formHeader, fieldDiv, revSubmit)
+  fieldDiv.appendChild(revInput)
+  revSubmit.appendChild(editIcon)
+  makeReviewSection()
+
   // fetch(apiURL + `users/${current_user.id}`)
   //   .then(res => res.json()).then(user => {
   //     let myRev = user.reviews.find(rev => rev.movie_id === getMoviePageId())
@@ -401,10 +551,10 @@ function renderReviewForm() {
   //     }
   // })
 
-  revForm.appendChild(revInput)
-  revForm.appendChild(revSubmit)
-  document.body.appendChild(revForm)
-  makeReviewSection()
+  // revForm.appendChild(revInput)
+  // revForm.appendChild(revSubmit)
+  // document.body.appendChild(revForm)
+  //makeReviewSection()
 }
 
 
@@ -625,4 +775,8 @@ function getUpdateUsername() {
 
 function getUpdateEmail() {
   return document.querySelector('#update-email')
+}
+
+function getReviewContent() {
+  return document.querySelector('#review-content')
 }
