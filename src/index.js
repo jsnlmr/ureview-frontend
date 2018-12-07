@@ -3,7 +3,8 @@ const showURL = 'https://www.omdbapi.com/?apikey=1d0d9f45&i='
 const apiURL = 'http://localhost:3000/api/v1/'
 
 let logged_in = false
-let current_user_id = null
+let current_user = null
+//let current_user_id = null
 
 document.addEventListener('DOMContentLoaded', function(){
   renderLogin()
@@ -129,7 +130,8 @@ function newregisterForm() {
     }).then(res => res.json()).then(user => {
       console.log(user)
       logged_in = true
-      current_user_id = user.id
+      current_user = user
+      //current_user_id = user.id
       getMovies()
     })
   })
@@ -154,7 +156,8 @@ function verifyUser() {
 
     if(found) {
       logged_in = true
-      current_user_id = found.id
+      current_user = found
+      //current_user_id = found.id
       renderNav()
       getMovies()
     }
@@ -172,7 +175,7 @@ function getMovies() {
   renderNav()
   if(event) {
     event.preventDefault()
-    if(getProfileForm()) { getProfileForm().remove() }
+    //if(getUpdateForm()) { getUpdateForm().remove() }
   }
 
   // if(getMovieForm() === null) {
@@ -192,14 +195,15 @@ function getMovies() {
   if(movieContainer() === null) {
     let container = document.createElement('div')
     container.id = 'movie-container'
+    container.className = "ui five stackable cards"
     document.body.appendChild(container)
   }
 
   else { movieContainer().innerHTML = '' }
 
-  if(logged_in && (!event || event.type == 'click')) {
+  if(logged_in && (!event || (event.type === 'click' && event.target.id != 'search-icon'))) {
     if(getLoginForm()) { getLoginForm().style.display = 'none' }
-      fetch(apiURL + `/users/${current_user_id}`)
+      fetch(apiURL + `/users/${current_user.id}`/*`/users/${current_user_id}`*/)
         .then(res => res.json()).then(revData => {
 
           let movies = revData.reviews.map( rev => rev.movie_id)
@@ -207,18 +211,27 @@ function getMovies() {
           if(movies.length === 0) {
             movieContainer().innerText = 'You have not reviewed any movies yet. Search now to find a movie to review.'
           }
-          movies.forEach( id => {
-            fetch(showURL + id).then(res => res.json())
-              .then(mov => renderMovie(mov))
-          })
+          else {
+            movies.forEach( id => {
+              fetch(showURL + id).then(res => res.json())
+                .then(mov => renderMovie(mov))
+            })
+          }
           //data['Search'].forEach(movie => renderMovie(movie))
       })
     }
 
     else {
-      fetch(searchURL + event.target.value)
+      let searchTerm = event.target.value ? event.target.value : event.target.previousSibling.value
+
+      fetch(searchURL + searchTerm)
         .then(res => res.json()).then(data => {
-          data['Search'].forEach(movie => renderMovie(movie))
+          if(data['Search']) {
+            data['Search'].forEach(movie => renderMovie(movie))
+          }
+          else {
+            movieContainer().innerText = 'No movies were found in your search.'
+          }
       })
 
       //getMovieForm().reset()
@@ -228,15 +241,27 @@ function getMovies() {
 function renderMovie(mov) {
   let movieCard = document.createElement('div')
   movieCard.addEventListener('click', fetchMovie)
+  movieCard.className = "fluid black card"
+  movieCard.dataset.movieId = mov["imdbID"]
+
+  let imageHolder = document.createElement('div')
+  imageHolder.className = "image"
 
   let poster = document.createElement('img')
   poster.src = mov['Poster']
+  poster.setAttribute('onerror', "this.onerror=null;this.src='https://rawapk.com/wp-content/uploads/2018/09/Movie-HD-Icon.png';")
+
+  let content = document.createElement('div')
+  content.className = "center aligned content"
 
   let title = document.createElement('div')
+  title.className = "header"
   title.innerText = mov['Title']
 
-  movieCard.append(poster, title)
-  movieCard.dataset.movieId = mov["imdbID"]
+  imageHolder.appendChild(poster)
+  content.appendChild(title)
+  movieCard.append(imageHolder, content)
+
   movieContainer().appendChild(movieCard)
 }
 
@@ -256,6 +281,7 @@ function showMovie(mov) {
   /// add poster //
   let poster = document.createElement('img')
   poster.src = mov["Poster"]
+  poster.setAttribute('onerror', "this.onerror=null;this.src='https://rawapk.com/wp-content/uploads/2018/09/Movie-HD-Icon.png';")
 
   // add title & year ////
   let titleYear = document.createElement('p')
@@ -292,7 +318,7 @@ function showMovie(mov) {
 
 function postReview() {
   event.preventDefault()
-  let data = { movie_id: event.target.previousSibling.dataset.movieId, content: event.target.children[0].value , user_id: 1}
+  let data = { movie_id: event.target.previousSibling.dataset.movieId, content: event.target.children[0].value , user_id: current_user.id}
 
   getReviewForm().reset()
 
@@ -359,7 +385,7 @@ function renderReviewForm() {
   revSubmit.type = 'submit'
   revForm.id = 'review-form'
 
-  fetch(apiURL + `users/${current_user_id}`)
+  fetch(apiURL + `users/${current_user.id}`/*`users/${current_user_id}`*/)
     .then(res => res.json()).then(user => {
       let myRev = user.reviews.find(rev => rev.movie_id === getMoviePageId())
 
@@ -465,6 +491,7 @@ function renderNav() {
     })
 
     let searchIcon = document.createElement('i')
+    searchIcon.id = 'search-icon'
     searchIcon.className = "search link icon"
     searchIcon.addEventListener('click', getMovies)
 
@@ -480,85 +507,104 @@ function renderNav() {
     searchBarDiv.appendChild(searchBar)
     searchBar.append(searchInput, searchIcon)
   }
-
-  ////////// PREVIOUS ////////
-  // let nav = document.createElement('nav')
-  //
-  //
-  // if(logged_in) {
-  //   let logout = document.createElement('a')
-  //   logout.id = 'logout'
-  //   logout.innerText = 'Logout'
-  //
-  //
-  //   let myReviews = document.createElement('a')
-  //   myReviews.id = 'my-reviews'
-  //   myReviews.innerText = 'My Reviews'
-  //
-  //   let profile = document.createElement('a')
-  //   profile.id = 'profile'
-  //   profile.innerText = 'My Profile'
-  //
-
-  //
-  //   document.body.appendChild(nav)
-  // }
 }
 
 
 function loadProfile() {
+
   document.body.innerHTML = ''
   renderNav()
-  let current_user
 
-  let profile_form = document.createElement('form')
-  profile_form.id = 'profile-form'
-  let name = document.createElement('input')
-  let username = document.createElement('input')
-  let email = document.createElement('input')
-  let submit = document.createElement('input')
-  submit.type = 'submit'
+  let updateContainer = document.createElement('div')
+  updateContainer.className = "ui middle aligned center aligned grid"
 
-  fetch(apiURL + `users/${current_user_id}`)
-    .then(res => res.json()).then(user => {
+  let updateBox = document.createElement('div')
+  updateBox.className = "column login-box"
 
-      current_user = user
-      name.value = current_user.name
-      username.value = current_user.username
-      email.value = current_user.email
-    })
+  let updateHeader = document.createElement('h2')
+  updateHeader.className = "ui black header"
+  updateHeader.innerText = "My Profile"
 
-  profile_form.addEventListener('submit', updateProfile)
-  profile_form.append(name, username, email, submit)
-  document.body.append(profile_form)
+  let updateForm = document.createElement('form')
+  updateForm.id = 'update-form'
+  updateForm.className = "ui large form"
+
+  let updateDiv = document.createElement('div')
+  updateDiv.className = "ui stacked segment"
+
+  let updateName = document.createElement('div')
+  updateName.className = "field"
+
+  let nameInput = document.createElement('input')
+  nameInput.id = 'update-name'
+  nameInput.placeholder = 'Full Name'
+  nameInput.value = current_user.name
+
+  let updateUsername = document.createElement('div')
+  updateUsername.className = "field"
+
+  let usernameInput = document.createElement('input')
+  usernameInput.id = 'update-username'
+  usernameInput.placeholder = 'Username'
+  usernameInput.value = current_user.username
+
+  let updateEmail = document.createElement('div')
+  updateEmail.className = "field"
+
+  let emailInput = document.createElement('input')
+  emailInput.id = 'update-email'
+  emailInput.placeholder = 'Email'
+  emailInput.value = current_user.email
+
+  let updateButton = document.createElement('div')
+  updateButton.className = "ui fluid blue large submit button"
+  updateButton.id = "update"
+  updateButton.innerText = "Update Profile"
+  updateButton.addEventListener('click', updateProfile)
+
+  document.body.appendChild(updateContainer)
+  updateContainer.appendChild(updateBox)
+  updateBox.append(updateHeader, updateForm)
+  updateForm.appendChild(updateDiv)
+  updateDiv.append(updateName, updateUsername, updateEmail, updateButton)
+  updateName.appendChild(nameInput)
+  updateUsername.appendChild(usernameInput)
+  updateEmail.appendChild(emailInput)
 }
 
 function updateProfile() {
   event.preventDefault()
-  let profile = event.currentTarget.children
-  let data = { name: profile[0].value, username: profile[1].value, email: profile[2].value }
+  if(event.target.id = 'update') {
+    alert('Profile successfully updated!')
+  }
 
-  fetch(apiURL + `users/${current_user_id}`, {
+  let profile = event.currentTarget.children
+  let data = { name: getUpdateName().value, username: getUpdateUsername().value, email: getUpdateEmail().value }
+
+  fetch(apiURL + `users/${current_user.id}`/*`users/${current_user_id}`*/, {
     method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',
       Accept: 'application/json'
     },
     body: JSON.stringify(data)
-  }).then(res => res.json()).then(user => updateProfileContent(user))
+  }).then(res => res.json()).then(user => {
+    current_user = user
+    loadProfile()
+  })
 }
 
-function  updateProfileContent(user) {
-  let formInputs = getProfileForm().children
-  formInputs[0].value = user.name
-  formInputs[1].value = user.username
-  formInputs[2].value = user.email
+// function  updateProfileContent(user) {
+//   let formInputs = getProfileForm().children
+//   formInputs[0].value = user.name
+//   formInputs[1].value = user.username
+//   formInputs[2].value = user.email
+//
+//   alert('Profile successfully updated!')
+// }
 
-  alert('Profile successfully updated!')
-}
-
-function getProfileForm() {
-  return document.querySelector('#profile-form')
+function getUpdateForm() {
+  return document.querySelector('#update-form')
 }
 
 function getLoginUsername() {
@@ -575,4 +621,16 @@ function getRegisterUsername() {
 
 function getRegisterEmail() {
   return document.querySelector('#register-email')
+}
+
+function getUpdateName() {
+  return document.querySelector('#update-name')
+}
+
+function getUpdateUsername() {
+  return document.querySelector('#update-username')
+}
+
+function getUpdateEmail() {
+  return document.querySelector('#update-email')
 }
