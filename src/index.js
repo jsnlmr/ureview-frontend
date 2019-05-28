@@ -1,6 +1,7 @@
 const searchURL = 'https://www.omdbapi.com/?apikey=1d0d9f45&s='
 const showURL = 'https://www.omdbapi.com/?apikey=1d0d9f45&i='
-const apiURL = 'http://localhost:3000/api/v1/'
+const apiURL = 'https://ureview-back.herokuapp.com/api/v1/'
+//const movieTrailer = require('movie-trailer');
 
 let logged_in = false
 let current_user = null
@@ -224,7 +225,7 @@ function renderMovie(mov) {
   movieCard.dataset.movieId = mov["imdbID"]
 
   let imageHolder = document.createElement('div')
-  imageHolder.className = "image"
+  imageHolder.className = "content image"
 
   let poster = document.createElement('img')
   poster.src = mov['Poster']
@@ -262,6 +263,7 @@ function showMovie(mov) {
   let movieCard = document.createElement('div')
   movieCard.dataset.movieId = mov["imdbID"]
   movieCard.className = "ui celled grid"
+  movieCard.id = 'movie-info'
 
   let rowDiv = document.createElement('div')
   rowDiv.className = "row"
@@ -301,7 +303,7 @@ function showMovie(mov) {
 
   let plotHeader = document.createElement('h4')
   plotHeader.innerText = "Plot Summary"
-  
+
   let production = document.createElement('h4')
   production.innerText = mov["Production"]
 
@@ -309,9 +311,6 @@ function showMovie(mov) {
   director.innerText = mov["Director"]
   let directorHeader = document.createElement('h4')
   directorHeader.innerText = "Director(s):"
-
-
-
 
   let writer = document.createElement('p')
   writer.innerText = mov["Writer"]
@@ -330,33 +329,17 @@ function showMovie(mov) {
   lengthGenreDate.append(runtime, ' | ', genre, ' | ', release_date)
   column12wide.append(titleYear, production, lengthGenreDate, plotHeader, plot, directorHeader, director, writerHeader, writer, actorsHeader, actors)
   renderReviewForm()
-
-  // document.body.innerHTML = ""
-  // renderNav()
-  // // create movie card //
-  // let movieCard = document.createElement('div')
-  // movieCard.dataset.movieId = mov["imdbID"]
-  //
-  // /// add poster //
-  // let poster = document.createElement('img')
-  // poster.src = mov["Poster"]
-  // poster.setAttribute('onerror', "this.onerror=null;this.src='https://rawapk.com/wp-content/uploads/2018/09/Movie-HD-Icon.png';")
-  //
-  // // add title & year ////
-  // let titleYear = document.createElement('p')
-  // titleYear.innerText = `${mov['Title']} (${mov['Year']})`
-  //
-  ////////// Runtime + Genre + Release Date ////////
-
-  //
-  // movieCard.append(poster, titleYear, lengthGenreDate, plot, director, writer, actors)
-  // document.body.appendChild(movieCard)
-  // renderReviewForm()
 }
 
 function postReview() {
   event.preventDefault()
-  let data = { movie_id: event.target.previousSibling.dataset.movieId, content: event.target.children[0].value , user_id: current_user.id}
+
+  let data = {
+    movie_id: document.querySelector('#movie-info')
+      .dataset.movieId,
+    content: document.querySelector('#review-content').value,
+    user_id: current_user.id
+  }
 
   getReviewForm().reset()
 
@@ -367,7 +350,10 @@ function postReview() {
       Accept: 'application/json'
     },
     body: JSON.stringify(data)
-  }).then(res => res.json()).then(revData => renderReview(revData))
+  }).then(res => res.json()).then(revData => {
+    current_user.reviews.push(revData)
+    renderReview(revData)
+  })
 }
 
 function updateReview() {
